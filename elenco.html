@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>Elenco esercitazioni | Test webapp</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; padding: 24px 16px; color: #f8fafc; background: radial-gradient(circle at 20% 20%, #1e3a5f, transparent 40%), linear-gradient(135deg, #0b1020, #17253d); }
+    main { width: min(100%, 900px); margin: 40px auto; padding: clamp(24px, 5vw, 48px); border: 1px solid #ffffff30; border-radius: 24px; background: #ffffff0d; box-shadow: 0 24px 70px #0004; }
+    h1 { margin: 0 0 12px; font-size: clamp(30px, 7vw, 46px); letter-spacing: -.04em; }
+    p { line-height: 1.6; color: #cbd5e1; }
+    .button { display: inline-block; padding: 11px 20px; border: 0; border-radius: 12px; background: #8ee7bc; color: #10231c; font: inherit; font-weight: 700; text-decoration: none; }
+    .button:hover { background: #b1f3d1; }
+    .table-wrap { overflow-x: auto; margin: 24px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 14px 16px; border-bottom: 1px solid #ffffff35; text-align: left; vertical-align: top; }
+    th { background: #ffffff12; color: #8ee7bc; }
+    td:first-child { white-space: nowrap; }
+    td:last-child { white-space: pre-wrap; overflow-wrap: anywhere; }
+    #stato.error { color: #ffb4b4; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="button" href="./">Indietro</a>
+    <h1>Elenco esercitazioni</h1>
+    <p>Le registrazioni inserite nella pagina principale.</p>
+    <p id="stato" role="status" aria-live="polite">Caricamento…</p>
+    <div class="table-wrap">
+      <table id="tabella" hidden>
+        <thead><tr><th scope="col">Data</th><th scope="col">Scopo dell'esercitazione</th></tr></thead>
+        <tbody id="righe"></tbody>
+      </table>
+    </div>
+  </main>
+  <script>
+    const api = 'https://muulnkckiqygdtnwotve.supabase.co/rest/v1/esercitazioni';
+    const key = 'sb_publishable_gX465q0keUmTVrRHSm41ZA_ICUPXJOH';
+    const status = document.getElementById('stato');
+    async function load() {
+      try {
+        const response = await fetch(api + '?select=data,scopo&order=created_at.desc&limit=100', { headers: { apikey: key }, cache: 'no-store' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const records = await response.json();
+        if (!records.length) { status.textContent = 'Nessuna esercitazione registrata.'; return; }
+        const rows = document.getElementById('righe');
+        for (const item of records) {
+          const tr = document.createElement('tr');
+          const date = document.createElement('td');
+          const [year, month, day] = item.data.split('-');
+          date.textContent = [day, month, year].join('/');
+          const purpose = document.createElement('td');
+          purpose.textContent = item.scopo;
+          tr.append(date, purpose);
+          rows.append(tr);
+        }
+        status.textContent = '';
+        document.getElementById('tabella').hidden = false;
+      } catch (error) {
+        status.textContent = 'Impossibile caricare l’elenco (' + error.message + '). Ricarica la pagina per riprovare.';
+        status.className = 'error';
+      }
+    }
+    load();
+  </script>
+</body>
+</html>

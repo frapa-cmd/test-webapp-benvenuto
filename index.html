@@ -10,10 +10,10 @@
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; color: #f8fafc; background: radial-gradient(circle at 20% 20%, #1e3a5f, transparent 40%), linear-gradient(135deg, #0b1020, #17253d); }
     header { display: flex; justify-content: flex-end; padding: 24px; }
-    button { font: inherit; cursor: pointer; padding: 11px 20px; border: 0; border-radius: 12px; background: #8ee7bc; color: #10231c; font-weight: 700; }
-    button:hover { background: #b1f3d1; }
+    .button, button { display: inline-block; font: inherit; cursor: pointer; padding: 11px 20px; border: 0; border-radius: 12px; background: #8ee7bc; color: #10231c; font-weight: 700; text-decoration: none; }
+    button:hover, .button:hover { background: #b1f3d1; }
     button:disabled { opacity: .55; cursor: wait; }
-    #elencoBtn { background: #ffffff1a; border: 1px solid #ffffff45; color: #fff; }
+    #elencoLink { background: #ffffff1a; border: 1px solid #ffffff45; color: #fff; }
     main { width: min(100% - 32px, 640px); margin: min(14vh, 100px) auto 48px; padding: clamp(26px, 6vw, 52px); border: 1px solid #ffffff30; border-radius: 24px; background: #ffffff0d; box-shadow: 0 24px 70px #0004; }
     h1 { margin: 0 0 12px; font-size: clamp(34px, 8vw, 52px); letter-spacing: -.04em; }
     h2 { margin: 0 0 20px; }
@@ -27,14 +27,10 @@
     #feedback { min-height: 24px; margin-top: 18px; }
     #feedback.error { color: #ffb4b4; }
     #feedback.ok { color: #8ee7bc; }
-    ul { list-style: none; padding: 0; margin: 0; }
-    li { padding: 16px 0; border-bottom: 1px solid #ffffff28; overflow-wrap: anywhere; }
-    li strong { color: #8ee7bc; }
-    li p { white-space: pre-wrap; margin: 8px 0 0; }
   </style>
 </head>
 <body>
-  <header><button id="elencoBtn" type="button">Elenco</button></header>
+  <header><a id="elencoLink" class="button" href="./elenco.html">Elenco</a></header>
   <main>
     <section id="benvenuto">
       <h1>Benvenuto!</h1>
@@ -51,55 +47,20 @@
         <button id="salvaBtn" type="submit">Salva</button>
       </form>
     </section>
-    <section id="elenco" hidden>
-      <h2>Elenco esercitazioni</h2>
-      <p id="statoElenco" role="status"></p>
-      <ul id="voci"></ul>
-      <div class="actions"><button id="nuovoBtn" type="button">Inserisci</button></div>
-    </section>
     <p id="feedback" role="status" aria-live="polite"></p>
   </main>
   <script>
     const api = 'https://muulnkckiqygdtnwotve.supabase.co/rest/v1/esercitazioni';
     const key = 'sb_publishable_gX465q0keUmTVrRHSm41ZA_ICUPXJOH';
-    const headers = { apikey: key };
-    const sections = ['benvenuto', 'inserimento', 'elenco'];
     const feedback = document.getElementById('feedback');
     const form = document.getElementById('formEsercitazione');
-    const list = document.getElementById('voci');
-    function show(name) { sections.forEach(id => { document.getElementById(id).hidden = id !== name; }); feedback.textContent = ''; feedback.className = ''; }
+    document.getElementById('inserisciBtn').addEventListener('click', () => {
+      document.getElementById('benvenuto').hidden = true;
+      document.getElementById('inserimento').hidden = false;
+      feedback.textContent = '';
+      document.getElementById('data').focus();
+    });
     function message(text, kind) { feedback.textContent = text; feedback.className = kind; }
-    function formatDate(value) { const [year, month, day] = value.split('-'); return [day, month, year].join('/'); }
-    function openForm() { show('inserimento'); document.getElementById('data').focus(); }
-    document.getElementById('inserisciBtn').addEventListener('click', openForm);
-    document.getElementById('nuovoBtn').addEventListener('click', openForm);
-    async function openList() {
-      show('elenco');
-      const status = document.getElementById('statoElenco');
-      const button = document.getElementById('elencoBtn');
-      status.textContent = 'Caricamento…';
-      list.replaceChildren();
-      button.disabled = true;
-      try {
-        const response = await fetch(api + '?select=data,scopo&order=created_at.desc&limit=100', { headers, cache: 'no-store' });
-        if (!response.ok) throw new Error('HTTP ' + response.status);
-        const records = await response.json();
-        status.textContent = records.length ? '' : 'Nessuna esercitazione registrata.';
-        for (const item of records) {
-          const li = document.createElement('li');
-          const date = document.createElement('strong');
-          date.textContent = formatDate(item.data);
-          const description = document.createElement('p');
-          description.textContent = item.scopo;
-          li.append(date, description);
-          list.append(li);
-        }
-      } catch (error) {
-        status.textContent = 'Impossibile caricare l’elenco. Riprova.';
-        message('Errore di lettura: ' + error.message, 'error');
-      } finally { button.disabled = false; }
-    }
-    document.getElementById('elencoBtn').addEventListener('click', openList);
     form.addEventListener('submit', async event => {
       event.preventDefault();
       if (!form.reportValidity()) return;
@@ -110,7 +71,7 @@
       button.disabled = true;
       message('Salvataggio in corso…', '');
       try {
-        const response = await fetch(api, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ data, scopo }) });
+        const response = await fetch(api, { method: 'POST', headers: { apikey: key, 'Content-Type': 'application/json', Prefer: 'return=minimal' }, body: JSON.stringify({ data, scopo }) });
         if (!response.ok) throw new Error('HTTP ' + response.status);
         form.reset();
         message('Esercitazione salvata. Premi «Elenco» per visualizzarla.', 'ok');
